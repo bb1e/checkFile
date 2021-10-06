@@ -1,0 +1,15 @@
+package "Example of .ggo file"
+version "1.0"
+
+#----------------------------
+# independent options
+#----------------------------
+# Mandatory option
+#option "folder" f "folder" string typestr="dirname" required
+
+# Optional
+
+# option    "file"      f       ""      string      no      multiple
+# option    "batch"     b       ""      string      no
+# option    "dir"       d       ""      string      no
+# option    "help"      h       ""      string      no

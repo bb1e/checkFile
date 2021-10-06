@@ -1,0 +1,2 @@
+# checkFile
+File extension analyser

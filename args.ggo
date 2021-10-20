@@ -9,7 +9,11 @@ version "1.0"
 
 # Optional
 
-# option    "file"      f       ""      string      no      multiple
-# option    "batch"     b       ""      string      no
-# option    "dir"       d       ""      string      no
-# option    "help"      h       ""      string      no
+defgroup "grp1" groupdesc="an option of this group is required" required
+
+
+groupoption    "file"      f       "file(s)"                        string  group="grp1"      multiple(1-)
+option    "batch"     b       "txt file with names/paths"      string  
+#batch está diferente para fazer testes mas vai mudar
+groupoption    "dir"       d       "directory"                      string  group="grp1"      multiple(-1)
+#groupoption    "help"      h       "help manual"                    string  group="grp1"     

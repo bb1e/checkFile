@@ -39,10 +39,29 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
+  char ** file_arg;	/**< @brief file(s).  */
+  char ** file_orig;	/**< @brief file(s) original value given at command line.  */
+  unsigned int file_min; /**< @brief file(s)'s minimum occurreces */
+  unsigned int file_max; /**< @brief file(s)'s maximum occurreces */
+  const char *file_help; /**< @brief file(s) help description.  */
+  char * batch_arg;	/**< @brief txt file with names/paths.  */
+  char * batch_orig;	/**< @brief txt file with names/paths original value given at command line.  */
+  const char *batch_help; /**< @brief txt file with names/paths help description.  */
+  char ** dir_arg;	/**< @brief directory.  */
+  char ** dir_orig;	/**< @brief directory original value given at command line.  */
+  unsigned int dir_min; /**< @brief directory's minimum occurreces */
+  unsigned int dir_max; /**< @brief directory's maximum occurreces */
+  const char *dir_help; /**< @brief directory help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
+  unsigned int file_given ;	/**< @brief Whether file was given.  */
+  int file_group ; /**< @brief Whether file's was updated.  */
+  unsigned int batch_given ;	/**< @brief Whether batch was given.  */
+  unsigned int dir_given ;	/**< @brief Whether dir was given.  */
+  int dir_group ; /**< @brief Whether dir's was updated.  */
 
+  int grp1_group_counter; /**< @brief Counter for group grp1 */
 } ;
 
 /** @brief The additional parameters to pass to parser functions */

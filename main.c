@@ -17,10 +17,15 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <stdint.h>
+#include <dirent.h>
 
 #include "debug.h"
 #include "memory.h"
 #include "args.h"
+
+
+void help();
+
 
 int main(int argc, char *argv[]) {
 
@@ -33,85 +38,90 @@ int main(int argc, char *argv[]) {
 	exit(1);
 	}
 
-    printf("%d\n", args.grp1_group_counter);
+    //printf("%d\n", args.grp1_group_counter);
     //printf("%s", cmdline_parser_file_save);
 
     int option = 0;
-    int fd;
 
     if (args.file_given){
 
 		option = 1;
+        printf("%s \n", args.file_arg);
 
 	} else if (args.batch_given){
 
 		option = 2;
                   
 	} else if (args.dir_given){
+
         option = 3;
+        
+    } else if (args.help_given){
+
+        option = 4;
+
     }
 
-    printf("%d\n", option);
+
 
     switch (option){
-        case 0: //help manual
-
-            printf("op %d\n", option);
-
-            break;
         case 1: //file op
 
             printf("op %d\n", option);
 
+            const char *fileName = args.file_arg;
+            FILE *file = fopen(fileName, "r");
+            if (file == NULL) 
+            {
+                ERROR(1, "Error opening file '%s'\n", args.batch_arg);
+            }
+
+            fclose(file);
+
             break;
         case 2: //batch op
 
+            //const char *fileName = args.batch_arg;
+            fileName = args.batch_arg;
+            FILE *f = fopen(fileName, "r");
+            if (f == NULL) 
+            {
+                ERROR(1, "Error opening file '%s'\n", args.batch_arg);
+            }
 
-            fd = open (args.batch_arg, O_RDONLY);
-		        if(fd == -1)
-		        {
-			        ERROR(1,"Can't open file '%s'\n", args.batch_arg);
-
-		        }
+            char *line = NULL;
+            size_t len = 0;
+ 
+            while(getline(&line, &len, f) != -1) {
+                printf("line length: %zd\n", strlen(line));
+            }
 
             //ler linha a linha e guardar num malloc e dps correr num for para fazer fork exec file
 
-            int close_fd = close(fd);
-		        if (close_fd == -1)
-		        {
-			        ERROR(1, "Error closing file '%s'\n", args.batch_arg);
-		        }
-
-            /*FILE *f = NULL;
-            char fname = args.batch_arg;
-            f = fopen(fname, "r");
-            if (f == NULL){
-                ERROR(2, "error opening file");
-            }*/
+            
+            free(line);
+            fclose(f);
  
-/*
-            char *lineptr = NULL;
-            size_t n = 0;
-            ssize_t res;
-
-            FILE *fptr = NULL;
-            fptr = fopen(args.batch_arg, "r"); //nao funciona?????????? fazer da outra maneira
-
-            if (fptr == NULL) {
-                ERROR(1,"Error opening the file");
-            }
-
-            while ((res = getline(&lineptr, &n, fptr)) != -1) {
-                printf("Encontrada linha com o tamanho: %zu :\n", res);
-                printf("%s", lineptr);
-            }
-
-            free(lineptr);
-            int fclose(FILE *fptr); */
             break;
         case 3: //dir op
 
             printf("op %d\n", option);
+
+            DIR *opendir(const char *name);
+
+            struct dirent *readdir(DIR *dirp);
+            int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result);
+            int closedir(DIR *dirp);
+
+            break;
+        case 4: //help op
+
+            help();
+
+            break;
+        default: 
+
+            printf("error");
 
             break;
     }
@@ -130,16 +140,13 @@ int main(int argc, char *argv[]) {
     fork exec file -> strtok
     */
 
-    //DIR
+    // DIR
     /*
     percorrer o diretorio sem os subdiretorios
     verificar tds os seus ficheiros
     fork exec file -> strtok
     */
 
-
-
-   
     return 0;
 }
 
@@ -151,3 +158,14 @@ void callFile(){
     //printf("File extension: %s \n",)
 
 }
+
+void help() {
+    printf("CheckFile will check if the file extension is the real file type or not\n");
+    printf("Command format: ./checkFile -op [argument]\n");
+    printf("Program options:\n-f -> one or more files\n-b -> file with one or more file names/paths\n-d -> directory name/path\n-h -> help manual\n");
+    printf("Author 1: Bruna Bastos LeaL -- 2201732\n");
+    printf("Author 2: Tomás Vilhena Pereira -- 2201785\n");
+    printf("File extensions compatible with the program: \nPDF, GIF, JPG, PNG, MP4, ZIP, HTML\n");
+    exit(1);
+}
+

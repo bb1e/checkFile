@@ -73,11 +73,17 @@ int main(int argc, char *argv[]) {
 
             printf("op %d\n", option);
 
+            /* verificação da extensão através de ponteiros -> passar ponteiro para o 
+            fim ler até achar o ponto e comparar
+            fim = ptr + strlen() -1 
+            ver tb strstr() -> pode ser q seja mais facil com isto
+            */
+
             const char *fileName = args.file_arg;
             FILE *file = fopen(fileName, "r");
             if (file == NULL) 
             {
-                ERROR(1, "Error opening file '%s'\n", args.batch_arg);
+                ERROR(1, "Error opening file '%s'\n", args.file_arg);
             }
 
             fclose(file);
@@ -95,7 +101,18 @@ int main(int argc, char *argv[]) {
 
             char *line = NULL;
             size_t len = 0;
+
+            //contar total de linhas q tem o ficheiro
+            int ch;
+            int count=0;
+            do
+            {
+                ch = fgetc(file);
+                if(ch == '\n') count++;   
+
+            } while( ch != EOF );
  
+            //ler linha a linha
             while(getline(&line, &len, f) != -1) {
                 printf("line length: %zd\n", strlen(line));
             }
@@ -158,8 +175,10 @@ int main(int argc, char *argv[]) {
 void callFile(){
 
     //execl( caminho_do_executavel , nome_do_comando, comando1, comando2, NULL )
-    ///execl("/bin/ls", "ls", "-la", NULL);
+    //execl("/bin/ls", "ls", "-la", NULL);
     //printf("File extension: %s \n",)
+
+    //execlp("/bin/ls", "ls", "-la", NULL);
 
 }
 

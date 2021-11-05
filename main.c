@@ -42,9 +42,6 @@ int main(int argc, char *argv[]) {
 	exit(1);
 	}
 
-    //printf("%d\n", args.grp1_group_counter);
-    //printf("%s", cmdline_parser_file_save);
-
     int option = 0;
 
     if (args.file_given){
@@ -71,10 +68,14 @@ int main(int argc, char *argv[]) {
         case 1: //file op
 
             printf("op %d\n", option);
-
+            
             for(unsigned int i = 0; i < args.file_given; i++){
-                char* filePath = args.file_arg[i];
-                printf("%s\n", args.file_arg[i]);
+  
+                FILE *file = fopen(args.file_arg[i], "r");
+                if (file == NULL) 
+                {
+                    ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
+                }
 
                 const char ch = '.';
                 char *ret;
@@ -86,26 +87,11 @@ int main(int argc, char *argv[]) {
                     && (strcmp(ret, ".html") != 0)){
 
                     printf("Invalid file type\n");
-                } // else char* filePath = args.file_arg[i];
-            }
-            
-   
-            /* verificação da extensão através de ponteiros -> passar ponteiro para o 
-            fim ler até achar o ponto e comparar
-            fim = ptr + strlen() -1 
-            ver tb strstr() -> pode ser q seja mais facil com isto
-            */
-            
-            for(unsigned int i = 0; i < args.file_given; i++){
-  
-                FILE *file = fopen(args.file_arg[i], "r");
-                if (file == NULL) 
-                {
-                    ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
+                }else {
+                    printf("Valid file type\n");
+                    //callFile
                 }
 
-
-                //fork exec file
 
                 fclose(file);
 
@@ -114,33 +100,34 @@ int main(int argc, char *argv[]) {
             break;
         case 2: //batch op
 
+            printf("op %d\n", option);
+
+            char *line;
+            size_t len = 0;
             FILE *f = fopen(args.batch_arg, "r");
             if (f == NULL) 
             {
                 ERROR(1, "Error opening file '%s'\n", args.batch_arg);
             }
 
-            char *line = NULL;
-            size_t len = 0;
 
-            //contar total de linhas q tem o ficheiro
-            int ch;
-            int count=0;
-            do
-            {
-                ch = fgetc(f);
-                if(ch == '\n') count++;   
+            while (getline (&line, &len, f) != -1){
+                printf("%s", line);
+                const char ch = '.';
+                char *ret;
+                ret = strrchr(line, ch);
+                printf("String after |%c| is - |%s|\n", ch, ret);
 
-            } while( ch != EOF );
- 
-            //ler linha a linha
-            while(getline(&line, &len, f) != -1) {
-                printf("line length: %zd\n", strlen(line));
-            }
+                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
+                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
+                    && (strcmp(ret, ".html") != 0)){
 
-            //ler linha a linha e guardar num malloc e dps correr num for para fazer fork exec file
-
-            //fazer for com a verificação da extensão valida
+                    printf("Invalid file type\n");
+                }else {
+                    printf("Valid file type\n");
+                    //callFile
+                }
+            }         
 
             
             free(line);
@@ -150,12 +137,70 @@ int main(int argc, char *argv[]) {
         case 3: //dir op
 
             printf("op %d\n", option);
+            
+
+            /*printf("op %d\n", option);
 
             DIR *opendir(const char *name);
 
             struct dirent *readdir(DIR *dirp);
             int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result);
-            int closedir(DIR *dirp);
+
+            int closedir(DIR *dirp);*/
+
+            struct dirent *dp;
+
+            DIR *dir = opendir(args.dir_arg);
+            if (!dir){ 
+                ERROR(1,"Unable to open director"); 
+            }
+
+            while ((dp = readdir(dir)) != NULL){
+                printf("%s\n", dp->d_name);
+                const char ch = '.';
+                char *ret;
+                ret = strrchr(dp->d_name, ch);
+
+                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
+                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
+                    && (strcmp(ret, ".html") != 0)){
+
+                    printf("Invalid file type\n");
+                }else {
+                    printf("Valid file type\n");
+                    //callFile
+                }
+            }
+
+            closedir(dir);
+
+
+
+            /*
+
+            while((df = readdir(dir))!=NULL){
+
+                if{
+                    continue;
+                } //if it isn't a regular file, continue to the next record
+
+                char* fileName = df->d_name; //file name
+
+                //join dirPath and fileName together in a separate string
+                char* filePath = malloc((strlen(dirPath)+strlen(fileName)+1)*sizeof(char));
+                strcpy(filePath, dirPath);
+                strcat(filePath, fileName);
+
+                if(canOpenFile(filePath)){
+                    verifyFile(filePath);
+                }
+
+            free(filePath);
+            }
+
+            */
+
+
 
             break;
         case 4: //help op
@@ -169,27 +214,6 @@ int main(int argc, char *argv[]) {
 
             break;
     }
-
-    // FILE
-    /*
-    correr os argumentos tds num for
-    fork exec file -> strtok
-    */
-
-    // BATCH
-    /*
-    fopen file
-    meter td num vetor dinamico
-    correr os elementos num for
-    fork exec file -> strtok
-    */
-
-    // DIR
-    /*
-    percorrer o diretorio sem os subdiretorios
-    verificar tds os seus ficheiros
-    fork exec file -> strtok
-    */
 
     return 0;
 }

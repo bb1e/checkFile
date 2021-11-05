@@ -12,7 +12,7 @@ version "1.0"
 defgroup "grp1" groupdesc="an option of this group is required" required
 
 
-groupoption    "file"      f       "file(s)"                        string  group="grp1"      
+groupoption    "file"      f       "file(s)"                        string  group="grp1"    multiple
 groupoption    "batch"     b       "txt file with names/paths"      string  group="grp1"
 groupoption    "dir"       d       "directory"                      string  group="grp1"      
-groupoption    "help"      h       "help manual"                    group="grp1"     no
+groupoption    "help"      h       "help manual"                            group="grp1"

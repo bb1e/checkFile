@@ -38,8 +38,10 @@ extern "C" {
 struct gengetopt_args_info
 {
   const char *version_help; /**< @brief Print version and exit help description.  */
-  char * file_arg;	/**< @brief file(s).  */
-  char * file_orig;	/**< @brief file(s) original value given at command line.  */
+  char ** file_arg;	/**< @brief file(s).  */
+  char ** file_orig;	/**< @brief file(s) original value given at command line.  */
+  unsigned int file_min; /**< @brief file(s)'s minimum occurreces */
+  unsigned int file_max; /**< @brief file(s)'s maximum occurreces */
   const char *file_help; /**< @brief file(s) help description.  */
   char * batch_arg;	/**< @brief txt file with names/paths.  */
   char * batch_orig;	/**< @brief txt file with names/paths original value given at command line.  */
@@ -51,6 +53,7 @@ struct gengetopt_args_info
   
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int file_given ;	/**< @brief Whether file was given.  */
+  int file_group ; /**< @brief Whether file's was updated.  */
   unsigned int batch_given ;	/**< @brief Whether batch was given.  */
   unsigned int dir_given ;	/**< @brief Whether dir was given.  */
   unsigned int help_given ;	/**< @brief Whether help was given.  */

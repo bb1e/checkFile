@@ -50,7 +50,6 @@ int main(int argc, char *argv[]) {
     if (args.file_given){
 
 		option = 1;
-        printf("%s \n", args.file_arg);
 
 	} else if (args.batch_given){
 
@@ -73,27 +72,49 @@ int main(int argc, char *argv[]) {
 
             printf("op %d\n", option);
 
+            for(unsigned int i = 0; i < args.file_given; i++){
+                char* filePath = args.file_arg[i];
+                printf("%s\n", args.file_arg[i]);
+
+                const char ch = '.';
+                char *ret;
+                ret = strrchr(args.file_arg[i], ch);
+                printf("String after |%c| is - |%s|\n", ch, ret);
+
+                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
+                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
+                    && (strcmp(ret, ".html") != 0)){
+
+                    printf("Invalid file type\n");
+                } // else char* filePath = args.file_arg[i];
+            }
+            
+   
             /* verificação da extensão através de ponteiros -> passar ponteiro para o 
             fim ler até achar o ponto e comparar
             fim = ptr + strlen() -1 
             ver tb strstr() -> pode ser q seja mais facil com isto
             */
+            
+            for(unsigned int i = 0; i < args.file_given; i++){
+  
+                FILE *file = fopen(args.file_arg[i], "r");
+                if (file == NULL) 
+                {
+                    ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
+                }
 
-            const char *fileName = args.file_arg;
-            FILE *file = fopen(fileName, "r");
-            if (file == NULL) 
-            {
-                ERROR(1, "Error opening file '%s'\n", args.file_arg);
+
+                //fork exec file
+
+                fclose(file);
+
             }
-
-            fclose(file);
 
             break;
         case 2: //batch op
 
-            //const char *fileName = args.batch_arg;
-            fileName = args.batch_arg;
-            FILE *f = fopen(fileName, "r");
+            FILE *f = fopen(args.batch_arg, "r");
             if (f == NULL) 
             {
                 ERROR(1, "Error opening file '%s'\n", args.batch_arg);
@@ -107,7 +128,7 @@ int main(int argc, char *argv[]) {
             int count=0;
             do
             {
-                ch = fgetc(file);
+                ch = fgetc(f);
                 if(ch == '\n') count++;   
 
             } while( ch != EOF );
@@ -118,6 +139,8 @@ int main(int argc, char *argv[]) {
             }
 
             //ler linha a linha e guardar num malloc e dps correr num for para fazer fork exec file
+
+            //fazer for com a verificação da extensão valida
 
             
             free(line);

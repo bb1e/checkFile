@@ -78,7 +78,25 @@ int main(int argc, char *argv[]) {
 
                 line[strcspn(line, "\n")] = 0; //end line with \0 instead of \n
                 printf("%s\n", line);
-                checkFile(line);
+
+                FILE *f = fopen(line, "r");
+                if (f == NULL) 
+                {
+                    printf("[ERROR] unable to open file '%s' or file doesn't exist\n", line);
+
+                }else if(line == NULL || (strcmp(line, "..") == 0) || (strcmp(line, ".") == 0)){
+            
+                    printf("[INFO] not a file\n");
+
+                } else if(strchr(line,'.') == NULL){
+
+                    // file that doesn't have the extension in the name
+                    printf("[INFO] not valid\n");
+
+                } else{
+
+                    checkFile(line);
+                }
             }
 
         fclose(file);
@@ -98,8 +116,20 @@ int main(int argc, char *argv[]) {
 
             char* fileName = dp->d_name;
             printf("%s\n", fileName);
-            checkFile(fileName);
+            if(fileName == NULL || (strcmp(fileName, "..") == 0) || (strcmp(fileName, ".") == 0)){
+            
+                printf("[INFO] not a file\n");
 
+             } else if(strchr(fileName,'.') == NULL){
+
+                // file that doesn't have the extension in the name
+                 printf("[INFO] not valid\n");
+
+             } else{
+
+                checkFile(fileName);
+
+             }
         }
 
         closedir(dir);
@@ -116,32 +146,24 @@ int main(int argc, char *argv[]) {
 
 
 void help() {
-    printf("CheckFile will check if the file extension is the real file type or not\n");
+    printf("\n***************************************************************************************\n");
+    printf("\nCheckFile will check if the file extension is the real file type or not.\n");
+    printf("File extensions supported by program: PDF, GIF, JPG, PNG, MP4, ZIP, HTML\n");
     printf("Command format: ./checkFile -op [argument]\n");
-    printf("Program options:\n-f -> one or more files\n-b -> file with one or more file names/paths\n-d -> directory name/path\n-h -> help manual\n");
+    printf("Program options:\n-f -> one or more files\n-b -> file with one or more file names/paths\n-d -> directory name/path\n-h -> help manual\n\n");
     printf("Author 1: Bruna Bastos LeaL -- 2201732\n");
     printf("Author 2: Tomás Vilhena Pereira -- 2201785\n");
-    printf("File extensions supported by program: \nPDF, GIF, JPG, PNG, MP4, ZIP, HTML\n");
+    printf("\n***************************************************************************************\n");
     exit(0);
 }
 
-int isRegularFile(const char *fileName){
-
-    //get extension
-    const char ch = '.';
-    char *ret;
-    ret = strrchr(fileName, ch);
+int isRegularFile(const char *ext){
 
     //verify extension
-    if(ret == NULL || (strcmp(ret, "..") == 0) || (strcmp(ret, ".") == 0)){
-        printf("[INFO] not a file\n");
-        return -1;
+    if((strcmp(ext, "pdf") != 0) && (strcmp(ext, "gif") != 0) && (strcmp(ext, "jpg") != 0)
+               && (strcmp(ext, "png") != 0) && (strcmp(ext, "mp4") != 0) && (strcmp(ext, "zip") != 0)
+               && (strcmp(ext, "html") != 0)){
 
-    } else if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
-               && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
-               && (strcmp(ret, ".html") != 0)){
-
-        printf("[INFO] '%s' is not supported by checkFile\n", fileName);
         return -1;
 
     }else {
@@ -155,60 +177,70 @@ int isRegularFile(const char *fileName){
 
 void checkFile(const char *fileName){
 
-    int regular = isRegularFile(fileName);
-
     //create temporary file to save the output of execl()
     FILE* tmpFile = tmpfile(); 
     int fd = fileno(tmpFile); //get the file descriptor from an open stream
 
-    if(regular == 0){
 
-        pid_t pid = fork();
-        if (pid < 0){
-            ERROR(1, "[ERROR] failed to fork()");
-        } else if(pid == 0){
-            dup2(fd, 1); //redirect the output (stdout) to temporary file
-            int execReturn = execl("/bin/file", "file", fileName, "--mime-type", "-b", NULL);
-            if(execReturn == -1){
-                ERROR(1, "[ERROR] failed to execl()");
-            }
+    pid_t pid = fork();
+    if (pid < 0){
+
+        ERROR(1, "[ERROR] failed to fork()");
+
+    } else if(pid == 0){
+
+        dup2(fd, 1); //redirect the output (stdout) to temporary file
+        int execReturn = execl("/bin/file", "file", fileName, "--mime-type", "-b", NULL);
+        if(execReturn == -1){
+            ERROR(1, "[ERROR] failed to execl()");
+        }
+
+    } else{
+
+        wait(NULL);
+
+        const char ch = '.';
+        char *ext;
+        ext = strrchr(fileName, ch);
+        ext++;
+        char* fileExt = ext; //file extention after '.'
+
+        // read til EOF and count nº of bytes
+        fseek(tmpFile, 0, SEEK_END);
+        long fsize = ftell(tmpFile)-1;
+        fseek(tmpFile, 0, SEEK_SET); 
+        char *string = malloc(fsize*sizeof(char)); 
+        fread(string, 1, fsize, tmpFile);
+        string[fsize] = 0; //Set the last '\n' byte to \0
+        //this string contains the real file extension
+        fclose(tmpFile);
+
+        const char ch1 = '/';
+        char *type;
+        type = strrchr(string, ch1);
+        type++;
+        char* trueExt = type;
+
+        //jpg apeears as jpeg in exec the others still the same
+        char* fullExt = fileExt;
+        if(strcmp(fileExt, "jpg")==0){
+            fullExt = "jpeg";
+        }
+
+        if(strcmp(type, "x-empty") == 0){
+                
+            printf("[INFO] '%s': is an empty file\n", fileName);
+
+        }else if(isRegularFile(trueExt) == -1){
+
+            printf("[INFO] '%s': type '%s' is not supported by checkFile\n", fileName, trueExt);
+
         } else{
-            wait(NULL);
 
-            const char ch = '.';
-            char *ret;
-            ret = strrchr(fileName, ch);
-            ret++;
-            char* fileExt = ret; //file extention after '.'
-
-            // read til EOF and count nº of bytes
-            fseek(tmpFile, 0, SEEK_END);
-            long fsize = ftell(tmpFile)-1;
-            fseek(tmpFile, 0, SEEK_SET); 
-            char *string = malloc(fsize*sizeof(char)); 
-            fread(string, 1, fsize, tmpFile);
-            string[fsize] = 0; //Set the last '\n' byte to \0.
-            fclose(tmpFile);
-
-            char* strType = strrchr(string, '/');
-            char* type = strType++;
-
-            if(strcmp(type, "x-empty") == 0){
-                printf("[INFO] '%s': is an empty file\n", fileName);
-                free(strType);
-                return;
-            }
-
-            //jpg apeears as jpeg in exec the others still the same
-            char* fullExt = fileExt;
-            if(strcmp(fileExt, "jpg")==0){
-                fullExt = "jpeg";
-            }
-
-            if(strcmp(type, fullExt)==0){
-                printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, strType);
+            if(strcmp(trueExt, fullExt)==0){
+                printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, trueExt);
             }else{
-                printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, strType);
+                 printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, trueExt);
             }
         }
     }

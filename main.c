@@ -32,6 +32,9 @@
 void help();
 int isSupportedFile(const char *fileName);
 void checkFile(const char *fileName, int *v);
+void signals(int sig, siginfo_t *siginfo, void *context);
+
+char fileExec[255]; //global variable to save file name needed for signal message
 
 
 int main(int argc, char *argv[]) {
@@ -44,9 +47,33 @@ int main(int argc, char *argv[]) {
 	exit(1);
 	}
 
+
+    //signals
+	struct sigaction act;
+
+    //define signals answer
+    act.sa_sigaction = signals;
+    //mask without signals -- dont block signals
+    sigemptyset(&act.sa_mask);
+
+    act.sa_flags = SA_SIGINFO;  //info about signal
+    act.sa_flags |= SA_RESTART; //retrieves blocking calls
+
+    //get signal SIGUSR1
+    if (sigaction(SIGUSR1, &act, NULL) < 0){
+        ERROR(1, "sigaction - SIGUSR1");
+	}
+    if (sigaction(SIGQUIT, &act, NULL) < 0){
+        ERROR(1, "sigaction - SIGQUIT");
+    }
+
+
+    //array to save summary counters
     int summary[4] = {0};
 
     if (args.file_given){
+
+        signal(SIGUSR1, SIG_IGN); //ignore SIGUSR1
 
         printf("\n[INFO] analyzing file/s\n");
 
@@ -91,6 +118,7 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
+            // read the batch file given line by line and analyse each file
             char *line;
             size_t len = 0;
             while (getline (&line, &len, file) != -1){
@@ -130,6 +158,8 @@ int main(int argc, char *argv[]) {
         printf("\n");
                   
 	} else if (args.dir_given){
+
+        signal(SIGUSR1, SIG_IGN); //ignore SIGUSR1 
 
         printf("\n[INFO] analyzing files of directory '%s'\n", args.dir_arg);
 
@@ -178,12 +208,14 @@ int main(int argc, char *argv[]) {
         
     } else if (args.help_given){
 
+        signal(SIGUSR1, SIG_IGN); //ignore SIGUSR1
+
         help();
 
     }
 
     return 0;
-}
+} 
 
 
 void help() {
@@ -218,6 +250,8 @@ int isSupportedFile(const char *ext){
 
 void checkFile(const char *fileName, int *v){
 
+    strcpy(fileExec, fileName); //copy fileName to fileExec to sow the file name in signal message
+
     //create temporary file to save the output of execl() 
     FILE* auxFile = tmpfile();
     //tmpfile() creates a temporary file that is deleted when fclose() 
@@ -235,6 +269,8 @@ void checkFile(const char *fileName, int *v){
 
         dup2(fd, 1); //redirect the output (stdout) to temporary file
         int execReturn = execl("/bin/file", "file", fileName, "--mime-type", "-b", NULL);
+        //--mime-type -> print only the specified elements
+        // -b -> do not prepend filenames to output lines
         if(execReturn == -1){
             ERROR(1, "[ERROR] failed to execl()");
             v[0]++;
@@ -255,6 +291,7 @@ void checkFile(const char *fileName, int *v){
         // read til EOF and count nº of bytes
         //here we get the output of execl() and save it in string to use it to extract the real file extention
         fseek(auxFile, 0, SEEK_END);
+        // ftell() returns the current file position
         long fsize = ftell(auxFile)-1;
         fseek(auxFile, 0, SEEK_SET);
         //dynamic memory to save the string we want 
@@ -269,7 +306,7 @@ void checkFile(const char *fileName, int *v){
         char *type;
         type = strrchr(str, ch1);
         type++;
-        char* trueExt = type;
+        char* trueExt = type; //file extention after '/'
 
         //jpg apears as jpeg in exec the others still the same
         char* fullExt = fileExt;
@@ -302,3 +339,22 @@ void checkFile(const char *fileName, int *v){
 }
 
 
+void signals(int sig, siginfo_t *siginfo, void *context) {
+    (void)context;
+    (void)siginfo;
+    //copy errno global variable
+    int aux = errno;
+
+    if (sig == SIGUSR1) {
+       time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+        printf("%d.%02d.%02d_%02dh%02d:%02d  --- %s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, fileExec);
+    }
+    if(sig== SIGQUIT){
+		 printf("Captured SIGQUIT signal (sent by PID: %d ). Use SIGINT to terminate application.\n", getpid());
+		}
+	
+    //restores value of the global variable errno
+    errno = aux;
+  
+}

@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 	exit(1);
 	}
 
-    int option = 0;
 
     if (args.file_given){
 
@@ -65,7 +64,7 @@ int main(int argc, char *argv[]) {
 
 	} else if (args.batch_given){
 
-        printf("[INFO] analyzing files listed in '%s'", args.batch_arg);
+        printf("[INFO] analyzing files listed in '%s'\n", args.batch_arg);
 
 		FILE *file = fopen(args.batch_arg, "r");
             if (file == NULL) 
@@ -77,11 +76,12 @@ int main(int argc, char *argv[]) {
             size_t len = 0;
             while (getline (&line, &len, file) != -1){
 
-                printf("%s", line);
+                line[strcspn(line, "\n")] = 0; //end line with \0 instead of \n
+                printf("%s\n", line);
                 checkFile(line);
             }
 
-            fclose(file);
+        fclose(file);
                   
 	} else if (args.dir_given){
 
@@ -127,10 +127,12 @@ void help() {
 
 int isRegularFile(const char *fileName){
 
+    //get extension
     const char ch = '.';
     char *ret;
     ret = strrchr(fileName, ch);
 
+    //verify extension
     if(ret == NULL || (strcmp(ret, "..") == 0) || (strcmp(ret, ".") == 0)){
         printf("[INFO] not a file\n");
         return -1;
@@ -155,10 +157,9 @@ void checkFile(const char *fileName){
 
     int regular = isRegularFile(fileName);
 
-    //create temporary file
+    //create temporary file to save the output of execl()
     FILE* tmpFile = tmpfile(); 
     int fd = fileno(tmpFile); //get the file descriptor from an open stream
-    char* token;
 
     if(regular == 0){
 
@@ -178,7 +179,6 @@ void checkFile(const char *fileName){
             char *ret;
             ret = strrchr(fileName, ch);
             ret++;
-
             char* fileExt = ret; //file extention after '.'
 
             // read til EOF and count nº of bytes
@@ -191,7 +191,7 @@ void checkFile(const char *fileName){
             fclose(tmpFile);
 
             char* strType = strrchr(string, '/');
-            char* type = strType;
+            char* type = strType++;
 
             if(strcmp(type, "x-empty") == 0){
                 printf("[INFO] '%s': is an empty file\n", fileName);
@@ -206,9 +206,9 @@ void checkFile(const char *fileName){
             }
 
             if(strcmp(type, fullExt)==0){
-                printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, type);
+                printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, strType);
             }else{
-                printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, type);
+                printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, strType);
             }
         }
     }

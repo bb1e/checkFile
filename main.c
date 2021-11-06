@@ -53,28 +53,29 @@ int main(int argc, char *argv[]) {
 
             if(args.file_arg[i] == NULL || (strcmp(args.file_arg[i], "..") == 0) || (strcmp(args.file_arg[i], ".") == 0)){
             
-                    printf("[INFO] not a file\n");
+                printf("[INFO] '%s' is not a file\n", args.file_arg[i]);
 
-                } else if(strchr(args.file_arg[i],'.') == NULL){
+            } else if(strchr(args.file_arg[i],'.') == NULL){
 
-                    // file that doesn't have the extension in the name
-                    printf("[INFO] not valid\n");
+                // file that doesn't have the extension in the name
+                printf("[INFO] '%s' is not valid\n", args.file_arg[i]);
 
-                } else{
+            } else{
 
-                    FILE *file = fopen(args.file_arg[i], "r");
-                    if (file == NULL) 
-                    {
-                        printf("[Error] cannot open file '%s' - No such file or directory\n", args.file_arg[i]);
+                FILE *file = fopen(args.file_arg[i], "r");
+                if (file == NULL) 
+                {
+                    printf("[Error] cannot open file '%s' - No such file or directory\n", args.file_arg[i]);
+                    continue;
 
-                    }else{
+                }else{
 
-                        checkFile(args.file_arg[i]);
+                    checkFile(args.file_arg[i]);
 
-                    }
-
-                    fclose(file);
                 }
+
+                fclose(file);
+            }
 		}
         printf("\n");
 
@@ -86,6 +87,7 @@ int main(int argc, char *argv[]) {
             if (file == NULL) 
             {
                 printf("[Error] cannot open file '%s' - No such file or directory\n", args.batch_arg);
+                exit(1);
             }
 
             char *line;
@@ -93,16 +95,15 @@ int main(int argc, char *argv[]) {
             while (getline (&line, &len, file) != -1){
 
                 line[strcspn(line, "\n")] = 0; //end line with \0 instead of \n
-                printf("%s\n", line);
 
                 if(line == NULL || (strcmp(line, "..") == 0) || (strcmp(line, ".") == 0)){
             
-                    printf("[INFO] not a file\n");
+                    printf("[INFO] '%s' is not a file\n", line);
 
                 } else if(strchr(line,'.') == NULL){
 
                     // file that doesn't have the extension in the name
-                    printf("[INFO] not valid\n");
+                    printf("[INFO] '%s' is not valid\n", line);
 
                 } else{
 
@@ -124,7 +125,7 @@ int main(int argc, char *argv[]) {
                   
 	} else if (args.dir_given){
 
-        printf("\n[INFO] analyzing files of directory '%s'", args.dir_arg);
+        printf("\n[INFO] analyzing files of directory '%s'\n", args.dir_arg);
 
         struct dirent *dp;
 
@@ -137,15 +138,14 @@ int main(int argc, char *argv[]) {
         while ((dp = readdir(dir)) != NULL){
 
             char* fileName = dp->d_name;
-            printf("%s\n", fileName);
             if(fileName == NULL || (strcmp(fileName, "..") == 0) || (strcmp(fileName, ".") == 0)){
             
-                printf("[INFO] '%s' not a file\n", fileName);
+                printf("[INFO] '%s' is not a file\n", fileName);
 
              } else if(strchr(fileName,'.') == NULL){
 
                 // file that doesn't have the extension in the name
-                 printf("[INFO] not valid\n");
+                 printf("[INFO] '%s' is not valid\n", fileName);
 
              } else{
 
@@ -183,7 +183,7 @@ void help() {
 int isRegularFile(const char *ext){
 
     //verify extension
-    if((strcmp(ext, "pdf") != 0) && (strcmp(ext, "gif") != 0) && (strcmp(ext, "jpg") != 0)
+    if((strcmp(ext, "pdf") != 0) && (strcmp(ext, "gif") != 0) && (strcmp(ext, "jpeg") != 0)
                && (strcmp(ext, "png") != 0) && (strcmp(ext, "mp4") != 0) && (strcmp(ext, "zip") != 0)
                && (strcmp(ext, "html") != 0)){
 

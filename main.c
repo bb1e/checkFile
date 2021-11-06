@@ -28,10 +28,10 @@
 #include "args.h"
 
 
-
+//functions prototypes
 void help();
-int isRegularFile(const char *fileName);
-void checkFile(const char *fileName);
+int isSupportedFile(const char *fileName);
+void checkFile(const char *fileName, int *v);
 
 
 int main(int argc, char *argv[]) {
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 	exit(1);
 	}
 
+    int summary[4] = {0};
 
     if (args.file_given){
 
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
 
                 }else{
 
-                    checkFile(args.file_arg[i]);
+                    checkFile(args.file_arg[i], summary);
 
                 }
 
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
 		FILE *file = fopen(args.batch_arg, "r");
             if (file == NULL) 
             {
-                printf("[Error] cannot open file '%s' - No such file or directory\n", args.batch_arg);
+                printf("[Error] cannot open file '%s' - No such file or directory\n\n", args.batch_arg);
                 exit(1);
             }
 
@@ -111,16 +112,21 @@ int main(int argc, char *argv[]) {
                     if (f == NULL) 
                     {
                         printf("[Error] cannot open file '%s' - No such file or directory\n", line);
+                        summary[0]++;
 
                     }else{
 
-                        checkFile(line);
+                        checkFile(line, summary);
+                        summary[1]++;
+                        fclose(f);
 
                     }
+                    
                 }
             }
 
         fclose(file);
+        printf("[SUMMARY] files analyzed: %d; files OK: %d; mismatch: %d; errors: %d\n", summary[1], summary[2], summary[3], summary[0]);
         printf("\n");
                   
 	} else if (args.dir_given){
@@ -131,7 +137,7 @@ int main(int argc, char *argv[]) {
 
         DIR *dir = opendir(args.dir_arg);
         if (!dir){ 
-            printf("[Error] cannot open dir '%s' - No such file or directory\n", args.dir_arg); 
+            printf("[ERROR] cannot open dir '%s' - No such file or directory\n\n", args.dir_arg); 
             exit(1);
         }
         
@@ -149,12 +155,24 @@ int main(int argc, char *argv[]) {
 
              } else{
 
-                checkFile(fileName);
+                FILE *f = fopen(fileName, "r");
+                if (f == NULL) 
+                {
+                    printf("[Error] cannot open file '%s' - permission denied\n", fileName);
+                    summary[0]++;
 
+                } else{
+
+                    checkFile(fileName, summary);
+                    summary[1]++;
+
+                }
+                fclose(f);
              }
         }
 
         closedir(dir);
+        printf("[SUMMARY] files analyzed: %d; files OK: %d; mismatch: %d; errors: %d\n", summary[1], summary[2], summary[3], summary[0]);
         printf("\n");
     
         
@@ -180,7 +198,7 @@ void help() {
     exit(0);
 }
 
-int isRegularFile(const char *ext){
+int isSupportedFile(const char *ext){
 
     //verify extension
     if((strcmp(ext, "pdf") != 0) && (strcmp(ext, "gif") != 0) && (strcmp(ext, "jpeg") != 0)
@@ -198,30 +216,36 @@ int isRegularFile(const char *ext){
 
 
 
-void checkFile(const char *fileName){
+void checkFile(const char *fileName, int *v){
 
     //create temporary file to save the output of execl() 
-    FILE* tmpFile = tmpfile(); 
-    int fd = fileno(tmpFile); //get the file descriptor from an open stream
+    FILE* auxFile = tmpfile();
+    //tmpfile() creates a temporary file that is deleted when fclose() 
+    int fd = fileno(auxFile); //get the file descriptor from an open stream
 
 
     pid_t pid = fork();
     if (pid < 0){
 
         ERROR(1, "[ERROR] failed to fork()");
+        v[0]++;
 
     } else if(pid == 0){
+        //child
 
         dup2(fd, 1); //redirect the output (stdout) to temporary file
         int execReturn = execl("/bin/file", "file", fileName, "--mime-type", "-b", NULL);
         if(execReturn == -1){
             ERROR(1, "[ERROR] failed to execl()");
+            v[0]++;
         }
 
     } else{
+        //parent
 
-        wait(NULL);
+        wait(NULL); //wait for any child to terminate
 
+        //get file extention
         const char ch = '.';
         char *ext;
         ext = strrchr(fileName, ch);
@@ -230,15 +254,17 @@ void checkFile(const char *fileName){
 
         // read til EOF and count nº of bytes
         //here we get the output of execl() and save it in string to use it to extract the real file extention
-        fseek(tmpFile, 0, SEEK_END);
-        long fsize = ftell(tmpFile)-1;
-        fseek(tmpFile, 0, SEEK_SET); 
+        fseek(auxFile, 0, SEEK_END);
+        long fsize = ftell(auxFile)-1;
+        fseek(auxFile, 0, SEEK_SET);
+        //dynamic memory to save the string we want 
         char *str = malloc(fsize*sizeof(char)); 
-        fread(str, 1, fsize, tmpFile);
+        fread(str, 1, fsize, auxFile);
         str[fsize] = 0; //Set the last '\n' byte to \0
         //this string contains the real file extension
-        fclose(tmpFile);
+        fclose(auxFile);
 
+        //get real file extention type
         const char ch1 = '/';
         char *type;
         type = strrchr(str, ch1);
@@ -255,7 +281,7 @@ void checkFile(const char *fileName){
                 
             printf("[INFO] '%s': is an empty file\n", fileName);
 
-        }else if(isRegularFile(trueExt) == -1){
+        }else if(isSupportedFile(trueExt) == -1){
 
             printf("[INFO] '%s': type '%s' is not supported by checkFile\n", fileName, trueExt);
 
@@ -264,10 +290,12 @@ void checkFile(const char *fileName){
             if(strcmp(trueExt, fullExt)==0){
 
                 printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, trueExt);
+                v[2]++;
 
             }else{
 
                  printf("[MISMATCH] '%s': extension is '%s' but file type is '%s'\n", fileName, fileExt, trueExt);
+                 v[3]++;
             }
         }
     }

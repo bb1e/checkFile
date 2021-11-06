@@ -30,6 +30,8 @@
 
 
 void help();
+int isRegularFile(const char *fileName);
+void checkFile(const char *fileName);
 
 
 int main(int argc, char *argv[]) {
@@ -46,188 +48,72 @@ int main(int argc, char *argv[]) {
 
     if (args.file_given){
 
-		option = 1;
+        printf("[INFO] analyzing file/s\n");
+
+        for(unsigned int i = 0; i < args.file_given; i++){
+
+            FILE *file = fopen(args.file_arg[i], "r");
+            if (file == NULL) 
+            {
+                ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
+            }
+
+            checkFile(args.file_arg[i]);
+            
+            fclose(file);
+		}
 
 	} else if (args.batch_given){
 
-		option = 2;
-                  
-	} else if (args.dir_given){
+        printf("[INFO] analyzing files listed in '%s'", args.batch_arg);
 
-        option = 3;
-        
-    } else if (args.help_given){
-
-        option = 4;
-
-    }
-
-
-
-    switch (option){
-        case 1: //file op
-
-            printf("op %d\n", option);
-            
-            for(unsigned int i = 0; i < args.file_given; i++){
-  
-                FILE *file = fopen(args.file_arg[i], "r");
-                if (file == NULL) 
-                {
-                    ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
-                }
-
-                const char ch = '.';
-                char *ret;
-                ret = strrchr(args.file_arg[i], ch);
-                printf("String after |%c| is - |%s|\n", ch, ret);
-
-                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
-                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
-                    && (strcmp(ret, ".html") != 0)){
-
-                    printf("Invalid file type\n");
-                }else {
-                    printf("Valid file type\n");
-                    //callFile
-                }
-
-
-                fclose(file);
-
-            }
-
-            break;
-        case 2: //batch op
-
-            printf("op %d\n", option);
-
-            char *line;
-            size_t len = 0;
-            FILE *f = fopen(args.batch_arg, "r");
-            if (f == NULL) 
+		FILE *file = fopen(args.batch_arg, "r");
+            if (file == NULL) 
             {
                 ERROR(1, "Error opening file '%s'\n", args.batch_arg);
             }
 
+            char *line;
+            size_t len = 0;
+            while (getline (&line, &len, file) != -1){
 
-            while (getline (&line, &len, f) != -1){
                 printf("%s", line);
-                const char ch = '.';
-                char *ret;
-                ret = strrchr(line, ch);
-                printf("String after |%c| is - |%s|\n", ch, ret);
-
-                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
-                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
-                    && (strcmp(ret, ".html") != 0)){
-
-                    printf("Invalid file type\n");
-                }else {
-                    printf("Valid file type\n");
-                    //callFile
-                }
-            }         
-
-            
-            free(line);
-            fclose(f);
- 
-            break;
-        case 3: //dir op
-
-            printf("op %d\n", option);
-            
-
-            /*printf("op %d\n", option);
-
-            DIR *opendir(const char *name);
-
-            struct dirent *readdir(DIR *dirp);
-            int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result);
-
-            int closedir(DIR *dirp);*/
-
-            struct dirent *dp;
-
-            DIR *dir = opendir(args.dir_arg);
-            if (!dir){ 
-                ERROR(1,"Unable to open director"); 
+                checkFile(line);
             }
 
-            while ((dp = readdir(dir)) != NULL){
-                printf("%s\n", dp->d_name);
-                const char ch = '.';
-                char *ret;
-                ret = strrchr(dp->d_name, ch);
+            fclose(file);
+                  
+	} else if (args.dir_given){
 
-                if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
-                    && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
-                    && (strcmp(ret, ".html") != 0)){
+        printf("[INFO] analyzing files of directory '%s'", args.dir_arg);
 
-                    printf("Invalid file type\n");
-                }else {
-                    printf("Valid file type\n");
-                    //callFile
-                }
-            }
+        struct dirent *dp;
 
-            closedir(dir);
+        DIR *dir = opendir(args.dir_arg);
+        if (!dir){ 
+            ERROR(1,"Unable to open director"); 
+        }
 
+        while ((dp = readdir(dir)) != NULL){
 
+            char* fileName = dp->d_name;
+            printf("%s\n", fileName);
+            checkFile(fileName);
 
-            /*
+        }
 
-            while((df = readdir(dir))!=NULL){
+        closedir(dir);
+    
+        
+    } else if (args.help_given){
 
-                if{
-                    continue;
-                } //if it isn't a regular file, continue to the next record
+        help();
 
-                char* fileName = df->d_name; //file name
-
-                //join dirPath and fileName together in a separate string
-                char* filePath = malloc((strlen(dirPath)+strlen(fileName)+1)*sizeof(char));
-                strcpy(filePath, dirPath);
-                strcat(filePath, fileName);
-
-                if(canOpenFile(filePath)){
-                    verifyFile(filePath);
-                }
-
-            free(filePath);
-            }
-
-            */
-
-
-
-            break;
-        case 4: //help op
-
-            help();
-
-            break;
-        default: 
-
-            printf("error");
-
-            break;
     }
 
     return 0;
 }
 
-//funcao para fork exec file
-void callFile(){
-
-    //execl( caminho_do_executavel , nome_do_comando, comando1, comando2, NULL )
-    //execl("/bin/ls", "ls", "-la", NULL);
-    //printf("File extension: %s \n",)
-
-    //execlp("/bin/ls", "ls", "-la", NULL);
-
-}
 
 void help() {
     printf("CheckFile will check if the file extension is the real file type or not\n");
@@ -235,8 +121,97 @@ void help() {
     printf("Program options:\n-f -> one or more files\n-b -> file with one or more file names/paths\n-d -> directory name/path\n-h -> help manual\n");
     printf("Author 1: Bruna Bastos LeaL -- 2201732\n");
     printf("Author 2: Tomás Vilhena Pereira -- 2201785\n");
-    printf("File extensions compatible with the program: \nPDF, GIF, JPG, PNG, MP4, ZIP, HTML\n");
+    printf("File extensions supported by program: \nPDF, GIF, JPG, PNG, MP4, ZIP, HTML\n");
     exit(0);
+}
+
+int isRegularFile(const char *fileName){
+
+    const char ch = '.';
+    char *ret;
+    ret = strrchr(fileName, ch);
+
+    if(ret == NULL || (strcmp(ret, "..") == 0) || (strcmp(ret, ".") == 0)){
+        printf("[INFO] not a file\n");
+        return -1;
+
+    } else if((strcmp(ret, ".pdf") != 0) && (strcmp(ret, ".gif") != 0) && (strcmp(ret, ".jpg") != 0)
+               && (strcmp(ret, ".png") != 0) && (strcmp(ret, ".mp4") != 0) && (strcmp(ret, ".zip") != 0)
+               && (strcmp(ret, ".html") != 0)){
+
+        printf("[INFO] '%s' is not supported by checkFile\n", fileName);
+        return -1;
+
+    }else {
+        printf("Valid file type\n");
+        return 0;
+    }
+
+}
+
+
+
+void checkFile(const char *fileName){
+
+    int regular = isRegularFile(fileName);
+
+    //create temporary file
+    FILE* tmpFile = tmpfile(); 
+    int fd = fileno(tmpFile); //get the file descriptor from an open stream
+    char* token;
+
+    if(regular == 0){
+
+        pid_t pid = fork();
+        if (pid < 0){
+            ERROR(1, "[ERROR] failed to fork()");
+        } else if(pid == 0){
+            dup2(fd, 1); //redirect the output (stdout) to temporary file
+            int execReturn = execl("/bin/file", "file", fileName, "--mime-type", "-b", NULL);
+            if(execReturn == -1){
+                ERROR(1, "[ERROR] failed to execl()");
+            }
+        } else{
+            wait(NULL);
+
+            const char ch = '.';
+            char *ret;
+            ret = strrchr(fileName, ch);
+            ret++;
+
+            char* fileExt = ret; //file extention after '.'
+
+            // read til EOF and count nº of bytes
+            fseek(tmpFile, 0, SEEK_END);
+            long fsize = ftell(tmpFile)-1;
+            fseek(tmpFile, 0, SEEK_SET); 
+            char *string = malloc(fsize*sizeof(char)); 
+            fread(string, 1, fsize, tmpFile);
+            string[fsize] = 0; //Set the last '\n' byte to \0.
+            fclose(tmpFile);
+
+            char* strType = strrchr(string, '/');
+            char* type = strType;
+
+            if(strcmp(type, "x-empty") == 0){
+                printf("[INFO] '%s': is an empty file\n", fileName);
+                free(strType);
+                return;
+            }
+
+            //jpg apeears as jpeg in exec the others still the same
+            char* fullExt = fileExt;
+            if(strcmp(fileExt, "jpg")==0){
+                fullExt = "jpeg";
+            }
+
+            if(strcmp(type, fullExt)==0){
+                printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, type);
+            }else{
+                printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, type);
+            }
+        }
+    }
 }
 
 

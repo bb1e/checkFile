@@ -47,29 +47,45 @@ int main(int argc, char *argv[]) {
 
     if (args.file_given){
 
-        printf("[INFO] analyzing file/s\n");
+        printf("\n[INFO] analyzing file/s\n");
 
         for(unsigned int i = 0; i < args.file_given; i++){
 
-            FILE *file = fopen(args.file_arg[i], "r");
-            if (file == NULL) 
-            {
-                ERROR(1, "Error opening file '%s'\n", args.file_arg[i]);
-            }
-
-            checkFile(args.file_arg[i]);
+            if(args.file_arg[i] == NULL || (strcmp(args.file_arg[i], "..") == 0) || (strcmp(args.file_arg[i], ".") == 0)){
             
-            fclose(file);
+                    printf("[INFO] not a file\n");
+
+                } else if(strchr(args.file_arg[i],'.') == NULL){
+
+                    // file that doesn't have the extension in the name
+                    printf("[INFO] not valid\n");
+
+                } else{
+
+                    FILE *file = fopen(args.file_arg[i], "r");
+                    if (file == NULL) 
+                    {
+                        printf("[Error] cannot open file '%s' - No such file or directory\n", args.file_arg[i]);
+
+                    }else{
+
+                        checkFile(args.file_arg[i]);
+
+                    }
+
+                    fclose(file);
+                }
 		}
+        printf("\n");
 
 	} else if (args.batch_given){
 
-        printf("[INFO] analyzing files listed in '%s'\n", args.batch_arg);
+        printf("\n[INFO] analyzing files listed in '%s'\n", args.batch_arg);
 
 		FILE *file = fopen(args.batch_arg, "r");
             if (file == NULL) 
             {
-                ERROR(1, "Error opening file '%s'\n", args.batch_arg);
+                printf("[Error] cannot open file '%s' - No such file or directory\n", args.batch_arg);
             }
 
             char *line;
@@ -79,12 +95,7 @@ int main(int argc, char *argv[]) {
                 line[strcspn(line, "\n")] = 0; //end line with \0 instead of \n
                 printf("%s\n", line);
 
-                FILE *f = fopen(line, "r");
-                if (f == NULL) 
-                {
-                    printf("[ERROR] unable to open file '%s' or file doesn't exist\n", line);
-
-                }else if(line == NULL || (strcmp(line, "..") == 0) || (strcmp(line, ".") == 0)){
+                if(line == NULL || (strcmp(line, "..") == 0) || (strcmp(line, ".") == 0)){
             
                     printf("[INFO] not a file\n");
 
@@ -95,30 +106,41 @@ int main(int argc, char *argv[]) {
 
                 } else{
 
-                    checkFile(line);
+                    FILE *f = fopen(line, "r");
+                    if (f == NULL) 
+                    {
+                        printf("[Error] cannot open file '%s' - No such file or directory\n", line);
+
+                    }else{
+
+                        checkFile(line);
+
+                    }
                 }
             }
 
         fclose(file);
+        printf("\n");
                   
 	} else if (args.dir_given){
 
-        printf("[INFO] analyzing files of directory '%s'", args.dir_arg);
+        printf("\n[INFO] analyzing files of directory '%s'", args.dir_arg);
 
         struct dirent *dp;
 
         DIR *dir = opendir(args.dir_arg);
         if (!dir){ 
-            ERROR(1,"Unable to open director"); 
+            printf("[Error] cannot open dir '%s' - No such file or directory\n", args.dir_arg); 
+            exit(1);
         }
-
+        
         while ((dp = readdir(dir)) != NULL){
 
             char* fileName = dp->d_name;
             printf("%s\n", fileName);
             if(fileName == NULL || (strcmp(fileName, "..") == 0) || (strcmp(fileName, ".") == 0)){
             
-                printf("[INFO] not a file\n");
+                printf("[INFO] '%s' not a file\n", fileName);
 
              } else if(strchr(fileName,'.') == NULL){
 
@@ -133,6 +155,7 @@ int main(int argc, char *argv[]) {
         }
 
         closedir(dir);
+        printf("\n");
     
         
     } else if (args.help_given){
@@ -167,7 +190,7 @@ int isRegularFile(const char *ext){
         return -1;
 
     }else {
-        printf("Valid file type\n");
+
         return 0;
     }
 
@@ -177,7 +200,7 @@ int isRegularFile(const char *ext){
 
 void checkFile(const char *fileName){
 
-    //create temporary file to save the output of execl()
+    //create temporary file to save the output of execl() 
     FILE* tmpFile = tmpfile(); 
     int fd = fileno(tmpFile); //get the file descriptor from an open stream
 
@@ -206,22 +229,23 @@ void checkFile(const char *fileName){
         char* fileExt = ext; //file extention after '.'
 
         // read til EOF and count nº of bytes
+        //here we get the output of execl() and save it in string to use it to extract the real file extention
         fseek(tmpFile, 0, SEEK_END);
         long fsize = ftell(tmpFile)-1;
         fseek(tmpFile, 0, SEEK_SET); 
-        char *string = malloc(fsize*sizeof(char)); 
-        fread(string, 1, fsize, tmpFile);
-        string[fsize] = 0; //Set the last '\n' byte to \0
+        char *str = malloc(fsize*sizeof(char)); 
+        fread(str, 1, fsize, tmpFile);
+        str[fsize] = 0; //Set the last '\n' byte to \0
         //this string contains the real file extension
         fclose(tmpFile);
 
         const char ch1 = '/';
         char *type;
-        type = strrchr(string, ch1);
+        type = strrchr(str, ch1);
         type++;
         char* trueExt = type;
 
-        //jpg apeears as jpeg in exec the others still the same
+        //jpg apears as jpeg in exec the others still the same
         char* fullExt = fileExt;
         if(strcmp(fileExt, "jpg")==0){
             fullExt = "jpeg";
@@ -238,9 +262,12 @@ void checkFile(const char *fileName){
         } else{
 
             if(strcmp(trueExt, fullExt)==0){
+
                 printf("[OK] '%s': extension '%s' matches file type '%s'\n", fileName, fileExt, trueExt);
+
             }else{
-                 printf("[MISMATCH] '%s': extension is '%s', file type is '%s'\n", fileName, fileExt, trueExt);
+
+                 printf("[MISMATCH] '%s': extension is '%s' but file type is '%s'\n", fileName, fileExt, trueExt);
             }
         }
     }

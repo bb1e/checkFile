@@ -1,8 +1,8 @@
 /**
  * @file main.c
  * @date 2021-10-01
- * @author Bruna Leal 2201732
- * @author Tomás Pereira 2201785
+ * @author Bruna Bastos Leal 2201732
+ * @author Tomás Vilhena Pereira 2201785
  */
 
 #include <stdio.h>

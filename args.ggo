@@ -1,6 +1,9 @@
 package "Example of .ggo file"
 version "1.0"
 
+#Bruna Leal 2201732
+#Tomás Pereira 2201785
+
 #----------------------------
 # independent options
 #----------------------------

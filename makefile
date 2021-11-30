@@ -1,9 +1,3 @@
-# Easily adaptable makefile
-# Note: remove comments (#) to activate some features
-#
-# author Vitor Carreira
-# date 2010-09-26 / updated: 2016-03-15 (Patricio)
-
 # Libraries to include (if any)
 LIBS=#-lm -pthread
 
